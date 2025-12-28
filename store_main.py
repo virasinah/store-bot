@@ -45,32 +45,21 @@ flask_app = Flask(__name__)
 flask_app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
 # Bot connection
-webhook_url = os.getenv('NGROK_HTTPS_URL')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 store_currency = os.getenv('STORE_CURRENCY', 'USD')
 
-if not webhook_url or not bot_token:
-    logger.error("Missing required environment variables: NGROK_HTTPS_URL or TELEGRAM_BOT_TOKEN")
     exit(1)
 
 bot = telebot.TeleBot(bot_token, threaded=False)
 
-# Set up webhook
 try:
-    bot.remove_webhook()
-    bot.set_webhook(url=webhook_url)
-    logger.info(f"Webhook set successfully to {webhook_url}")
 except Exception as e:
-    logger.error(f"Failed to set webhook: {e}")
     exit(1)
 
 
-# Process webhook calls
 logger.info("Shop Started!")
 
 @flask_app.route('/', methods=['GET', 'POST'])
-def webhook():
-    """Handle incoming webhook requests from Telegram"""
     try:
         if flask.request.headers.get('content-type') == 'application/json':
             json_string = flask.request.get_data().decode('utf-8')
@@ -78,10 +67,8 @@ def webhook():
             bot.process_new_updates([update])
             return ''
         else:
-            logger.warning("Invalid content type in webhook request")
             flask.abort(403)
     except Exception as e:
-        logger.error(f"Error processing webhook: {e}")
         flask.abort(500)
 
 # Initialize payment settings
@@ -1453,3 +1440,11 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Error starting Flask application: {e}")
         exit(1)
+
+
+if __name__ == '__main__':
+    try:
+        bot.remove_webhook()
+    except:
+        pass
+    bot.infinity_polling(timeout=20, long_polling_timeout=20)
